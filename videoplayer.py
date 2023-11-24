@@ -22,7 +22,7 @@ def get_altered_frame(cap):
 # checks if at the end of the video and returns that status
 def displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame):
 	ended = False
-	if video_time == video_length - msec_per_frame:
+	if video_time >= video_length - msec_per_frame:
 		ended = True
 		cv2.putText(imS, "End", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, text_color, 2)
 	else:
