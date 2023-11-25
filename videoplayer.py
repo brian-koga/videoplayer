@@ -21,6 +21,8 @@ def get_altered_frame(cap):
 # handles displaying the image with the state and state of help display,
 # checks if at the end of the video and returns that status
 def displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame):
+
+	# ending check
 	ended = False
 	if video_time >= video_length - msec_per_frame:
 		ended = True
@@ -48,7 +50,10 @@ def displayFrame(imS, state, show_controls, text_color, video_time, video_length
 	return ended
 
 
-def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
+def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), passed_function = lambda frame: frame, **kwargs):
+
+	print(kwargs)
+
 	print("in function")
 
 	# check video path is a readable .mp4 or .mov file
@@ -170,7 +175,6 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 			
 			if ret == True:
 				imS = cv2.resize(frame, (display_width, display_height))
-				display = imS.copy()
 				#if fast_forward:
 				#	cv2.putText(imS, "Fast Forward", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 				#if video_time == video_length - msec_per_frame:
@@ -181,6 +185,9 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 					state = "Fast Forward"
 				else:
 					state = ""
+				# apply passed function
+				imS = passed_function(imS, **kwargs)
+				display = imS.copy()
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 			else:
 				break
@@ -207,6 +214,8 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 			else:
 				imS = display.copy()
 				state = "Paused"
+				# apply passed function, not needed due to display
+				#imS = passed_function(imS, **kwargs)
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 			#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 			#cv2.imshow("player", imS)
@@ -224,8 +233,10 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
-					display = imS.copy()
 					state = "Stepping Forward"
+					# apply passed function
+					imS = passed_function(imS, **kwargs)
+					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 
 					#if video_time == video_length - msec_per_frame:
@@ -259,8 +270,10 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
-					display = imS.copy()
 					state = "Stepping Backward"
+					# apply passed function
+					imS = passed_function(imS, **kwargs)
+					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 					#cv2.putText(imS, "Stepping Backward", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 					#cv2.imshow("player", imS)
@@ -290,8 +303,10 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
-					display = imS.copy()
 					state = "Paused"
+					# apply passed function
+					imS = passed_function(imS, **kwargs)
+					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 					#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 					#cv2.imshow("player", imS)
@@ -319,8 +334,10 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
-					display = imS.copy()
 					state = "Paused"
+					# apply passed function
+					imS = passed_function(imS, **kwargs)
+					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 					#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 					#cv2.imshow("player", imS)
@@ -340,8 +357,10 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
 				print("current_time_position:", video_time)
 				imS = cv2.resize(frame, (display_width, display_height))
-				display = imS.copy()
 				state = "Paused"
+				# apply passed function
+				imS = passed_function(imS, **kwargs)
+				display = imS.copy()
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 				#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 				#cv2.imshow("player", imS)
@@ -356,8 +375,10 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
 				print("current_time_position:", video_time)
 				imS = cv2.resize(frame, (display_width, display_height))
-				display = imS.copy()
 				state = "Paused"
+				# apply passed function
+				imS = passed_function(imS, **kwargs)
+				display = imS.copy()
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 				#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 				#cv2.imshow("player", imS)
@@ -367,12 +388,14 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0)):
 		elif key == ord('h'):
 			show_controls = not show_controls
 			imS = display.copy()
+			# apply passed function, not needed
+			#imS = passed_function(imS, **kwargs)
 			ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 
 		# p saves an image of display
 		elif key == ord('p'):
 			saved_video_path = videopath + "_" + str(video_time - msec_per_frame) + "msec.jpg"
-			cv2.imwrite(savedVideopath, display)
+			cv2.imwrite(saved_video_path, display)
 			print("saved image at " + saved_video_path)
 
 
