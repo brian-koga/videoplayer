@@ -1,22 +1,8 @@
 import cv2
 import mediapipe as mp
 import os
+import time as tm
 
-
-def get_altered_frame(cap):
-	_, frame = cap.read()
-	video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-	print("current_time_position:", video_time)
-	try:
-		RGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-		# get and draw the landmarks
-		results = pose.process(RGB)
-		#print(results.pose_landmarks)
-		mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)	
-		return frame, video_time
-	except:
-		return None, -1
 
 # handles displaying the image with the state and state of help display,
 # checks if at the end of the video and returns that status
@@ -44,23 +30,22 @@ def displayFrame(imS, state, show_controls, text_color, video_time, video_length
 		cv2.putText(imS, "P: Save Frame", (25, 325), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
 	else:
 		cv2.putText(imS, "H: Toggle Controls", (25, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
+		pass
 
 	cv2.imshow("player", imS)
 
 	return ended
 
 
+# main function of module, takes a videopath a display modifier between 0 and 1, an rgb tuple to change the color
+# of the controls and the state, a function that is applied to every frame before display, and a dictionary of other
+# arguments that are passed to the passed_function
 def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), passed_function = lambda frame: frame, **kwargs):
-
-	print(kwargs)
-
-	print("in function")
 
 	# check video path is a readable .mp4 or .mov file
 	if not os.path.exists(videopath):
 		print("videopath does not exist")
 		return
-		# return or error#####
 
 	if not os.path.isfile(videopath):
 		print("videopath is not a file")
@@ -71,7 +56,6 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 		return
 
 	file_extension = os.path.splitext(videopath)[1]
-	print(file_extension)
 	if file_extension.lower() != ".mp4" and file_extension.lower() != ".mov":
 		print("videopath is not a video file")
 		return
@@ -85,19 +69,14 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 		print("text color is invalid")
 		return
 
-	#try:
-
-	#mp_drawing = mp.solutions.drawing_utils
-	#mp_pose = mp.solutions.pose
-
-	#pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-
+	print("Opening VideoCapture")
 	cap = cv2.VideoCapture(videopath)
 
 	# property values
 	frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 	frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 	frames_per_second = cap.get(cv2.CAP_PROP_FPS)
+	time_between_frames = frames_per_second/1000
 	total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 	current_time_position = cap.get(cv2.CAP_PROP_POS_MSEC)
 
@@ -110,44 +89,21 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 	display_width = int(frame_width*display_size_modifier)
 	display_height = int(frame_height*display_size_modifier)
 
-
-
-	#current_frame_position = cap.get(cv2.CAP_PROP_POS_FRAMES)
-	#cv2.CAP_PROP_POS_AVI_RATIO 0 = start, 1 = end
-
-	print("width: ", display_width)
-	print("height: ", display_height)
-	print("total_frames: ", total_frames)
-	print("fps: ", frames_per_second)
-	print("current_time_position:", current_time_position)
-	
-
-
-	#cap.set(cv2.CAP_PROP_POS_AVI_RATIO, 1)
-	#print(cap.get(cv2.CAP_PROP_POS_FRAMES))
-
-	# get milliseconds per frame
+	# get milliseconds per frame and total length of video
 	msec_per_frame = int(1000 / frames_per_second)
-	print("msec/frame: ", msec_per_frame)
-
 	video_length = total_frames*msec_per_frame
-	print("video_length: ", video_length)
-
-
-	video_time = video_length
-
 
 	cv2.namedWindow('player', cv2.WINDOW_AUTOSIZE)
 
-	# boolean for if playing normally or paused due to space or stepping
+	# booleans related to the state of the player
 	playing = True
 	fast_forward = False
-
 	ended = False
 	show_controls = True
 
 	state = ""
 
+	# a copy of the frame, needed for saving purposes
 	display = None
 
 	## actual run
@@ -160,37 +116,36 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					video_time = video_length - msec_per_frame
 					fast_forward = False
 				cap.set(cv2.CAP_PROP_POS_MSEC, video_time)
-				#frame, video_time = get_altered_frame(cap)
-				#ret, frame = cap.read()
-				#video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				#print("current_time_position:", video_time)
-			
-			#else:
-				#frame, video_time = get_altered_frame(cap)
-				#if video_time >= video_length - msec_per_frame:
-				#	playing = False
+
+			start_time = tm.time()
+	
+	
 			ret, frame = cap.read()
 			video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-			print("current_time_position:", video_time)
+			#print("current_time_position:", video_time)
 			
 			if ret == True:
 				imS = cv2.resize(frame, (display_width, display_height))
-				#if fast_forward:
-				#	cv2.putText(imS, "Fast Forward", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-				#if video_time == video_length - msec_per_frame:
-				#	playing = False
-				#	cv2.putText(imS, "End", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-				#cv2.imshow("player", imS)
+
 				if fast_forward:
 					state = "Fast Forward"
 				else:
 					state = ""
-				# apply passed function
+
+				#apply passed function
 				imS = passed_function(imS, **kwargs)
 				display = imS.copy()
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 			else:
 				break
+
+			# we want the time each frame takes to be the fps so in case the execution of the passed function
+			# takes less than the desired time between frames smay have to sleep
+			time_passed = tm.time() - start_time
+			if time_passed < time_between_frames:
+				print("sleeping for %f" % (time_between_frames - time_passed))
+				tm.sleep(time_between_frames - time_passed)
+
 
 		# look for a key press
 		key = cv2.waitKey(1)
@@ -214,23 +169,18 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 			else:
 				imS = display.copy()
 				state = "Paused"
-				# apply passed function, not needed due to display
-				#imS = passed_function(imS, **kwargs)
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
-			#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-			#cv2.imshow("player", imS)
+
 
 		# d key is how you step, works if paused or playing
 		elif key == ord('d'):
 			
 			#frame, video_time = get_altered_frame(cap)
 			# end check, if at end don't do anything
-			#if video_time < video_length - msec_per_frame:
 			if not ended:
 				playing = False
 				ret, frame = cap.read()
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
 					state = "Stepping Forward"
@@ -239,11 +189,6 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 
-					#if video_time == video_length - msec_per_frame:
-					#	cv2.putText(imS, "End", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-					#else:
-					#	cv2.putText(imS, "Stepping Forward", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-					#cv2.imshow("player", imS)
 				else:
 					break
 
@@ -251,8 +196,6 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 		elif key == ord('a'):
 			
 			# beginning check, if at beginning, don't do anything
-			#if video_time < 0:
-			#	video_time = 0
 			if video_time >= msec_per_frame:
 				# ending check
 				if ended:
@@ -264,10 +207,9 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					video_time = 0
 				cap.set(cv2.CAP_PROP_POS_MSEC, video_time)
 
-				#frame, video_time = get_altered_frame(cap)
 				ret, frame = cap.read()
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				print("current_time_position:", video_time)
+				#print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
 					state = "Stepping Backward"
@@ -275,8 +217,7 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					imS = passed_function(imS, **kwargs)
 					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
-					#cv2.putText(imS, "Stepping Backward", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-					#cv2.imshow("player", imS)
+
 				else:
 					break
 		
@@ -297,10 +238,8 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					video_time = video_length - msec_per_frame
 				cap.set(cv2.CAP_PROP_POS_MSEC, video_time)
 
-				#frame, video_time = get_altered_frame(cap)
 				ret, frame = cap.read()
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
 					state = "Paused"
@@ -308,8 +247,7 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					imS = passed_function(imS, **kwargs)
 					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
-					#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-					#cv2.imshow("player", imS)
+
 				else:
 					break
 
@@ -328,10 +266,8 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					video_time = 0
 				cap.set(cv2.CAP_PROP_POS_MSEC, video_time)
 
-				#frame, video_time = get_altered_frame(cap)
 				ret, frame = cap.read()
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				print("current_time_position:", video_time)
 				if ret == True:
 					imS = cv2.resize(frame, (display_width, display_height))
 					state = "Paused"
@@ -339,8 +275,7 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					imS = passed_function(imS, **kwargs)
 					display = imS.copy()
 					ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
-					#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-					#cv2.imshow("player", imS)
+
 				else:
 					break
 
@@ -353,17 +288,16 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 					ended = False
 				playing = False
 				cap.set(cv2.CAP_PROP_POS_MSEC, 0)
+
 				ret, frame = cap.read()
 				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				print("current_time_position:", video_time)
 				imS = cv2.resize(frame, (display_width, display_height))
-				state = "Paused"
+				state = "To Beginning"
 				# apply passed function
 				imS = passed_function(imS, **kwargs)
 				display = imS.copy()
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
-				#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-				#cv2.imshow("player", imS)
+
 
 		# c goes to the end
 		elif key == ord('c'):
@@ -372,29 +306,27 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 				playing = False
 				cap.set(cv2.CAP_PROP_POS_MSEC, video_length - msec_per_frame)
 				ret, frame = cap.read()
-				video_time = cap.get(cv2.CAP_PROP_POS_MSEC)
-				print("current_time_position:", video_time)
 				imS = cv2.resize(frame, (display_width, display_height))
-				state = "Paused"
+				state = "To Ending"
 				# apply passed function
 				imS = passed_function(imS, **kwargs)
 				display = imS.copy()
 				ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
-				#cv2.putText(imS, "Paused", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-				#cv2.imshow("player", imS)
+
 
 
 		# h toggles the control display
 		elif key == ord('h'):
 			show_controls = not show_controls
 			imS = display.copy()
-			# apply passed function, not needed
-			#imS = passed_function(imS, **kwargs)
 			ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 
 		# p saves an image of display
 		elif key == ord('p'):
 			saved_video_path = videopath + "_" + str(video_time - msec_per_frame) + "msec.jpg"
+			imS = display.copy()
+			state = "Saved Frame"
+			ended = displayFrame(imS, state, show_controls, text_color, video_time, video_length, msec_per_frame)
 			cv2.imwrite(saved_video_path, display)
 			print("saved image at " + saved_video_path)
 
@@ -402,10 +334,3 @@ def run_player(videopath, display_size_modifier = 1.0, text_color = (0, 0, 0), p
 
 	cap.release()
 	cv2.destroyAllWindows()
-
-	#except:
-	#	print("error")
-
-if __name__ == "_main__":
-	print("running player")
-	run_player("5-28_3_A_R_6_240.mp4")
